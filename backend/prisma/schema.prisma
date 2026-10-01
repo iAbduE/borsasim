@@ -1,0 +1,270 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  COMPANY
+}
+
+enum CompanyStatus {
+  INACTIVE
+  IPO
+  OPEN
+  CLOSED
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderType {
+  LIMIT
+  MARKET
+}
+
+enum OrderStatus {
+  OPEN
+  FILLED
+  CANCELLED
+  PARTIAL
+}
+
+enum Sentiment {
+  POS
+  NEG
+  NEUTRAL
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(STUDENT)
+  isActive  Boolean  @default(true)
+  emailVerified Boolean @default(false)
+  verificationToken String?
+  verificationTokenExpiry DateTime?
+  verificationAttempts Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account    Account?
+  positions  Position[]
+  orders     Order[]
+  tradesBuy  Trade[]        @relation("TradeBuy")
+  tradesSell Trade[]        @relation("TradeSell")
+  ipoDemands IpoDemand[]
+  ipoAllocations IpoAllocation[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cash            Decimal  @default(0) @db.Decimal(18, 2)
+  lockedCash      Decimal  @default(0) @db.Decimal(18, 2)
+  totalDeposit    Decimal  @default(0) @db.Decimal(18, 2)
+  totalWithdrawal Decimal  @default(0) @db.Decimal(18, 2)
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Company {
+  id           String        @id @default(cuid())
+  symbol       String        @unique
+  name         String
+  sector       String?
+  description  String?
+  status       CompanyStatus @default(INACTIVE)
+  ipoMinPrice  Decimal?      @db.Decimal(10, 2)
+  ipoMaxPrice  Decimal?      @db.Decimal(10, 2)
+  ipoShares    Int?
+  freeFloat    Int?
+  currentPrice Decimal?      @db.Decimal(10, 2)
+  lastPrice    Decimal?      @db.Decimal(10, 2)
+  openPrice    Decimal?      @db.Decimal(10, 2)
+  highPrice    Decimal?      @db.Decimal(10, 2)
+  lowPrice     Decimal?      @db.Decimal(10, 2)
+  isActive     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  ipoWindows     IpoWindow[]
+  ipoDemands     IpoDemand[]
+  ipoAllocations IpoAllocation[]
+  positions      Position[]
+  orders         Order[]
+  trades         Trade[]
+  news           News[]
+
+  @@index([symbol])
+  @@index([status])
+}
+
+model IpoWindow {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  startsAt        DateTime
+  endsAt          DateTime
+  finalPrice      Decimal? @db.Decimal(10, 2)
+  allocationPrice Decimal? @db.Decimal(10, 2)
+  allocationDate  DateTime?
+  isAllocated     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@index([startsAt, endsAt])
+}
+
+model IpoDemand {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  price     Decimal  @db.Decimal(10, 2)
+  quantity  Int
+  createdAt DateTime @default(now())
+
+  @@index([companyId, price])
+  @@index([userId, companyId])
+}
+
+model IpoAllocation {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  allocatedQty Int
+  avgPrice     Decimal  @db.Decimal(10, 2)
+  totalCost    Decimal  @db.Decimal(18, 2)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+}
+
+model Position {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quantity  Int
+  lockedQuantity Int @default(0)
+  avgPrice  Decimal  @db.Decimal(10, 2)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  side      OrderSide
+  type      OrderType
+  price     Decimal?    @db.Decimal(10, 2)
+  qty       Int
+  remaining Int
+  filled    Int         @default(0)
+  status    OrderStatus @default(OPEN)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([companyId, status, side, price])
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+model Trade {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  price       Decimal  @db.Decimal(10, 2)
+  qty         Int
+  value       Decimal  @db.Decimal(18, 2)
+  fee         Decimal  @db.Decimal(10, 2)
+  buyOrderId  String
+  sellOrderId String
+  buyUserId   String
+  buyUser     User     @relation("TradeBuy", fields: [buyUserId], references: [id])
+  sellUserId  String
+  sellUser    User     @relation("TradeSell", fields: [sellUserId], references: [id])
+  executedAt  DateTime @default(now())
+
+  @@index([companyId, executedAt])
+  @@index([buyUserId])
+  @@index([sellUserId])
+}
+
+model News {
+  id          String    @id @default(cuid())
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title       String
+  body        String    @db.Text
+  sentiment   Sentiment @default(NEUTRAL)
+  publishedAt DateTime  @default(now())
+  createdBy   String?
+
+  @@index([companyId, publishedAt])
+  @@index([publishedAt])
+}
+
+model Config {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  meta      Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([entity, entityId])
+}
+
+model Advertisement {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String   @db.Text // Base64 or URL
+  link      String?
+  location  String   @default("HOME_TOP") // HOME_TOP, SIDEBAR, FOOTER
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, location])
+}

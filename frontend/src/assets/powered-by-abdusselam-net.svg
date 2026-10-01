@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="610" height="100" viewBox="0 0 610 100" role="img" aria-labelledby="powered-title powered-description">
+  <title id="powered-title">powered by abdusselam.net</title>
+  <desc id="powered-description">powered by abdusselam.net</desc>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&amp;display=swap');
+
+    .powered-label {
+      fill: #a8a49c;
+      font-family: 'Space Grotesk', Arial, sans-serif;
+      font-size: 32px;
+      font-style: normal;
+      font-weight: 400;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-name {
+      fill: #f2efe9;
+      font-family: 'Space Grotesk', Arial, sans-serif;
+      font-size: 52px;
+      font-style: normal;
+      font-weight: 700;
+      letter-spacing: -2px;
+    }
+
+    .brand-domain {
+      fill: #ff8c5a;
+    }
+  </style>
+
+  <text class="powered-label" x="8" y="64">powered by</text>
+  <text class="brand-name" x="210" y="64">
+    abdusselam<tspan class="brand-domain">.</tspan>net
+  </text>
+</svg>
