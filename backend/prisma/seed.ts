@@ -44,7 +44,7 @@ async function main() {
   // =====================================================
   console.log("👥 Kullanıcılar oluşturuluyor...");
 
-  const adminPassword = await bcrypt.hash("CHANGE_ME!", 10);
+  const adminPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || "Admin123!", 10);
   const admin = await prisma.user.upsert({
     where: { email: "admin@borsasim.com" },
     update: {},
@@ -64,7 +64,7 @@ async function main() {
   });
   console.log("   ✅ Admin: " + admin.email);
 
-  const studentPassword = await bcrypt.hash("Ogrenci123!", 10);
+  const studentPassword = await bcrypt.hash(process.env.SEED_STUDENT_PASSWORD || "Ogrenci123!", 10);
 
   const students = [
     { email: "ahmet.yilmaz@borsasim.com", name: "Ahmet Yılmaz", cash: 1000000 },
@@ -700,7 +700,7 @@ async function main() {
   console.log("   • 1 aktif IPO penceresi");
   console.log("");
   console.log("👤 Giriş Bilgileri:");
-  console.log("   Admin: admin@borsasim.com / CHANGE_ME!");
+  console.log("   Admin: admin@borsasim.com / " + (process.env.SEED_ADMIN_PASSWORD || "Admin123!"));
   console.log("   Öğrenci: ogrenci@borsasim.com / Ogrenci123!");
   console.log("");
 }
